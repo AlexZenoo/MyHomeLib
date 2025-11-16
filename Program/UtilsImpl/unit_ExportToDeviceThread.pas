@@ -28,9 +28,9 @@ type
     TFileOprecord = record
       SourceFile: string;
       TargetFile: string;
-        TempFile: string;
-        FileName: string;
-          Stream: TStream;
+      TempFile: string;
+      FileName: string;
+      Stream: TStream;
     end;
 
   protected
@@ -102,17 +102,18 @@ uses
   unit_WriteFb2Info;
 
 resourcestring
-rstrCheckTemplateValidity = 'Перевірте правильність шаблону';
-   rstrArchiveNotFound = 'Архів' + CR + 'не знайдено!';
-   rstrFileNotFound = 'File "%s" not found';
-   rstrProcessRemainingFiles = 'Обробляти файли, що залишилися?';
-   rstrFilesProcessed = 'Записано файли: %u з %u';
-   rstrCompleted = 'Завершення операції...';
+  rstrCheckTemplateValidity = 'Перевірте правильність шаблону';
+  rstrArchiveNotFound = 'Архів' + CR + 'не знайдено!';
+  rstrFileNotFound = 'File "%s" not found';
+  rstrProcessRemainingFiles = 'Обробляти файли, що залишилися?';
+  rstrFilesProcessed = 'Записано файли: %u з %u';
+  rstrCompleted = 'Завершення операції...';
+  rstrRememberChoise = 'Запам''ятати вибір?';
 
 const
   MaxPathLength = 240;
 
-{ TExportToDeviceThread }
+  { TExportToDeviceThread }
 
 constructor TExportToDeviceThread.Create;
 var
@@ -195,7 +196,7 @@ begin
 
     FFileOprecord.TargetFile := FTargetFullFilePath;
     FFileOprecord.SourceFile := R.GetBookFileName;
-    FFileOprecord.FileName:= FTargetFileName + R.FileExt;
+    FFileOprecord.FileName := FTargetFileName + R.FileExt;
 
     //
     // Если файл в архиве - распаковываем в $tmp
@@ -210,11 +211,11 @@ begin
       end;
 
       if Length(FTargetFileName) < FMaxTempPathLength then
-        FTempFileName := Format('%s%s',[FTargetFileName, R.FileExt])
+        FTempFileName := Format('%s%s', [FTargetFileName, R.FileExt])
       else
         FTempFileName := Format('%s%s',[Copy(FTargetFileName, 1, FMaxTempPathLength), R.FileExt]);
 
-      FFileOprecord.TempFile :=  TPath.Combine(FTempPath, FTempFileName);
+      FFileOprecord.TempFile := TPath.Combine(FTempPath, FTempFileName);
 
       FFileOprecord.Stream := R.GetBookStream;
 
@@ -294,9 +295,9 @@ end;
 
 function TExportToDeviceThread.ExportToFB2: boolean;
 begin
- if FFileOprecord.Stream <> nil then
-   Result := StreamToFile(FFileOprecord.TargetFile, FFileOprecord.Stream)
- else
+  if FFileOprecord.Stream <> nil then
+    Result := StreamToFile(FFileOprecord.TargetFile, FFileOprecord.Stream)
+  else
    Result := unit_globals.CopyFile(FFileOprecord.SourceFile, FFileOprecord.TargetFile);
 end;
 
@@ -331,11 +332,11 @@ begin
   begin
     case FExportMode of
         emFB2, emFB2Zip, emTxt: Result := ProcessFileFromStream;
-      else
-        Result := CallExternalConverter;
+    else
+      Result := CallExternalConverter;
     end;
   end
-    else
+  else
       Result := unit_globals.CopyFile(FFileOprecord.SourceFile, FFileOprecord.TargetFile);
 end;
 
@@ -391,7 +392,9 @@ var
   i: Integer;
   totalBooks: Integer;
   Res: Boolean;
+  IsShowDialog: BOOL;
 begin
+  IsShowDialog := True;
   FProgressEngine.BeginOperation(Length(FBookIdList), rstrFilesProcessed, rstrFilesProcessed);
   try
     totalBooks := Length(FBookIdList);
@@ -414,10 +417,14 @@ begin
 
       if not Res and (i < totalBooks - 1) then
       begin
-        //
-        // TODO -oNickR -cUsability : предусмотреть возможность сказать "да для всех"
-        //
-        Canceled := (ShowMessage(rstrProcessRemainingFiles, MB_ICONQUESTION or MB_YESNO) = IDNO);
+        if IsShowDialog then
+        begin
+          Canceled := (ShowMessage(rstrProcessRemainingFiles, MB_ICONQUESTION or MB_YESNO) = IDNO);
+          if ShowMessage(rstrRememberChoise, MB_ICONQUESTION or MB_YESNO) = IDYES then
+          begin
+            IsShowDialog := False;
+          end;
+        end;
       end;
 
       FProgressEngine.AddProgress;
